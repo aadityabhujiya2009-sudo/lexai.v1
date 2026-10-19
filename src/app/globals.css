@@ -251,17 +251,6 @@ a {
   opacity: 0.62;
 }
 
-.chat-mock-label {
-  border-radius: 999px;
-  background: rgb(211 168 92 / 0.18);
-  padding: 0.2rem 0.45rem;
-  color: var(--gold-700);
-  font-size: 0.6rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
 .chat-composer {
   border-top: 1px solid rgb(18 56 47 / 0.1);
   background: rgb(255 255 255 / 0.94);

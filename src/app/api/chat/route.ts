@@ -1,8 +1,42 @@
 import { NextResponse } from "next/server";
 
 import type { ChatRequestMessage } from "@/components/chat/types";
+import {
+  LegalInformationProviderError,
+  type LegalInformationProviderErrorKind,
+} from "@/lib/ai/provider";
+import { GeminiLegalInformationProvider } from "@/lib/ai/gemini-provider";
 
-const DEV_MOCK_PREFIX = "[DEV MOCK, not a real AI response]";
+export const runtime = "nodejs";
+
+const MAX_MESSAGE_LENGTH = 4000;
+const MAX_HISTORY_MESSAGES = 20;
+const MAX_TOTAL_REQUEST_BYTES = 100_000;
+const RATE_LIMIT_MAX_REQUESTS = 10;
+const RATE_LIMIT_WINDOW_MS = 60_000;
+
+const rateLimitStore = new Map<string, number[]>();
+
+function getClientIp(request: Request) {
+  const netlifyIp = request.headers.get("x-nf-client-connection-ip")?.trim();
+  const forwardedIp = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim();
+  const realIp = request.headers.get("x-real-ip")?.trim();
+  return netlifyIp || forwardedIp || realIp || "unknown";
+}
+
+function isRateLimited(ip: string) {
+  const now = Date.now();
+  const windowStart = now - RATE_LIMIT_WINDOW_MS;
+  const recentRequests = (rateLimitStore.get(ip) ?? []).filter((timestamp) => timestamp > windowStart);
+
+  if (recentRequests.length >= RATE_LIMIT_MAX_REQUESTS) {
+    rateLimitStore.set(ip, recentRequests);
+    return true;
+  }
+
+  rateLimitStore.set(ip, [...recentRequests, now]);
+  return false;
+}
 
 function isChatRequestMessage(value: unknown): value is ChatRequestMessage {
   if (!value || typeof value !== "object") {
@@ -13,36 +47,100 @@ function isChatRequestMessage(value: unknown): value is ChatRequestMessage {
   return (
     (message.role === "user" || message.role === "assistant") &&
     typeof message.content === "string" &&
-    message.content.length > 0 &&
-    message.content.length <= 4000
+    message.content.trim().length > 0 &&
+    message.content.length <= MAX_MESSAGE_LENGTH
   );
 }
 
+function getMessages(body: unknown): unknown {
+  if (!body || typeof body !== "object" || !("messages" in body)) {
+    return null;
+  }
+
+  return body.messages;
+}
+
+function logDiagnostic(status: number, errorType: string, startedAt: number) {
+  console.info("[chat]", {
+    status,
+    errorType,
+    durationMs: Date.now() - startedAt,
+  });
+}
+
+function jsonResponse(body: object, status: number, errorType: string, startedAt: number) {
+  logDiagnostic(status, errorType, startedAt);
+  return NextResponse.json(body, { status });
+}
+
+function providerFailureResponse(error: unknown, startedAt: number) {
+  if (error instanceof LegalInformationProviderError) {
+    const responseByKind: Record<LegalInformationProviderErrorKind, { status: number; message: string }> = {
+      rate_limit: { status: 429, message: "The assistant is temporarily rate limited. Please try again shortly." },
+      timeout: { status: 504, message: "The assistant took too long to respond. Please try again." },
+      unavailable: { status: 502, message: "The assistant is temporarily unavailable. Please try again later." },
+      empty_response: { status: 502, message: "The assistant could not generate a response." },
+      unknown: { status: 500, message: "The assistant could not generate a response." },
+    };
+    const mapped = responseByKind[error.kind];
+    return jsonResponse({ error: mapped.message }, mapped.status, error.kind, startedAt);
+  }
+
+  return jsonResponse({ error: "The assistant could not generate a response." }, 500, "unknown", startedAt);
+}
+
 export async function POST(request: Request) {
-  // TEMPORARY: This route exists only to exercise the Stage 2 UI. Replace it with
-  // the server-side provider implementation before enabling production chat.
-  if (process.env.NODE_ENV === "production") {
-    return NextResponse.json(
-      { error: "The LexAI assistant is not available in this stage." },
-      { status: 503 },
-    );
+  const startedAt = Date.now();
+
+  // Best effort only: each serverless instance has separate memory. A shared
+  // store such as Netlify Blobs, Upstash, or Redis should replace this later.
+  if (isRateLimited(getClientIp(request))) {
+    return jsonResponse({ error: "Too many requests. Please try again shortly." }, 429, "rate_limit", startedAt);
+  }
+
+  const declaredLength = Number(request.headers.get("content-length"));
+  if (Number.isFinite(declaredLength) && declaredLength > MAX_TOTAL_REQUEST_BYTES) {
+    return jsonResponse({ error: "Request is too large." }, 413, "request_too_large", startedAt);
+  }
+
+  const rawBody = await request.text();
+  if (new TextEncoder().encode(rawBody).byteLength > MAX_TOTAL_REQUEST_BYTES) {
+    return jsonResponse({ error: "Request is too large." }, 413, "request_too_large", startedAt);
+  }
+
+  let body: unknown;
+  try {
+    body = JSON.parse(rawBody);
+  } catch {
+    return jsonResponse({ error: "Invalid chat request." }, 400, "invalid_payload", startedAt);
+  }
+
+  const messages = getMessages(body);
+  if (
+    !Array.isArray(messages) ||
+    messages.length === 0 ||
+    messages.length > MAX_HISTORY_MESSAGES ||
+    !messages.every(isChatRequestMessage)
+  ) {
+    return jsonResponse({ error: "Invalid chat request." }, 400, "invalid_payload", startedAt);
+  }
+
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) {
+    return jsonResponse({ error: "The assistant is temporarily unavailable." }, 503, "missing_configuration", startedAt);
   }
 
   try {
-    const body: unknown = await request.json();
-    const messages = body && typeof body === "object" && "messages" in body ? body.messages : null;
+    const provider = new GeminiLegalInformationProvider(apiKey);
+    const result = await provider.getInformation({ messages });
 
-    if (!Array.isArray(messages) || messages.length === 0 || !messages.every(isChatRequestMessage)) {
-      return NextResponse.json({ error: "Invalid chat request." }, { status: 400 });
-    }
-
-    return NextResponse.json({
-      reply: {
-        role: "assistant",
-        content: `${DEV_MOCK_PREFIX} This temporary response confirms that the chat interface received your message. No real AI analysis has been generated.`,
-      },
-    });
-  } catch {
-    return NextResponse.json({ error: "Unable to process the chat request." }, { status: 400 });
+    return jsonResponse(
+      { reply: { role: "assistant", content: result.text } },
+      200,
+      "success",
+      startedAt,
+    );
+  } catch (error) {
+    return providerFailureResponse(error, startedAt);
   }
 }
