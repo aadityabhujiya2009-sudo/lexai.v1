@@ -27,6 +27,7 @@ export async function POST() {
     maxAge: 60 * 60 * 24 * 365,
     path: "/",
     sameSite: "lax",
+    // Production acceptance cookies must only travel over HTTPS.
     secure: process.env.NODE_ENV === "production",
   });
 
