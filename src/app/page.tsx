@@ -83,6 +83,7 @@ export default function Home() {
               <p className="body-copy mt-8 max-w-xl text-lg leading-8 sm:text-xl">
                 LexAI helps you explore legal concepts, understand documents, and prepare better questions for a qualified legal professional.
               </p>
+              <p className="mt-4 max-w-xl text-sm leading-6 text-forest-800/65">First-launch scope: general legal information about Indian law only. Information may be incomplete or out of date, so verify important points with a qualified Indian lawyer.</p>
               <div className="mt-10 flex flex-col gap-3 sm:flex-row sm:items-center">
                 <Link className="button button-primary" href="/chat">
                   Try the assistant
@@ -203,11 +204,11 @@ export default function Home() {
             <div className="grid gap-8 sm:grid-cols-[auto_1fr] sm:gap-10">
               <div className="flex size-16 items-center justify-center rounded-3xl bg-gold-500/15 text-gold-700"><Shield className="size-7" /></div>
               <div>
-                <p className="max-w-2xl text-xl leading-9 text-forest-950 sm:text-2xl">LexAI is designed to help you think clearly about legal information, with boundaries you can see.</p>
+                <p className="max-w-2xl text-xl leading-9 text-forest-950 sm:text-2xl">LexAI is designed to help you think clearly about Indian legal information, with boundaries you can see.</p>
                 <div className="mt-9 grid gap-4 border-t border-forest-950/10 pt-6 sm:grid-cols-3 sm:gap-6">
                   <div><p className="font-semibold text-forest-950">Clear boundaries</p><p className="mt-2 text-sm leading-6 text-forest-800/65">No pretending to be a lawyer or law firm.</p></div>
                   <div><p className="font-semibold text-forest-950">No false promises</p><p className="mt-2 text-sm leading-6 text-forest-800/65">No guarantees about outcomes or decisions.</p></div>
-                  <div><p className="font-semibold text-forest-950">Your judgment stays central</p><p className="mt-2 text-sm leading-6 text-forest-800/65">Use context to prepare for the right next conversation.</p></div>
+                  <div><p className="font-semibold text-forest-950">Current information</p><p className="mt-2 text-sm leading-6 text-forest-800/65">Indian law can change. Verify important points, including newer criminal-law terminology.</p></div>
                 </div>
               </div>
             </div>
@@ -219,7 +220,7 @@ export default function Home() {
             <div className="max-w-2xl">
               <div className="eyebrow mb-5"><span className="eyebrow-dot" /> Important to know</div>
               <h2 className="font-serif text-3xl tracking-[-0.025em] text-forest-950 sm:text-4xl">Information for orientation, not advice.</h2>
-              <p className="mt-5 max-w-xl leading-7 text-forest-800/75">LexAI gives general legal information, not legal advice. It is not a lawyer or law firm, and it cannot guarantee any outcome. For advice about your situation, speak with a qualified legal professional.</p>
+              <p className="mt-5 max-w-xl leading-7 text-forest-800/75">LexAI gives general legal information about Indian law only, not legal advice. It is not a lawyer or law firm, information may be incomplete or out of date, and it cannot guarantee any outcome. For advice about your situation, speak with a qualified Indian lawyer.</p>
             </div>
             <Link className="button button-dark mt-8 shrink-0 self-start lg:mt-0" href="/chat">See the preview <ArrowUpRight className="size-4" /></Link>
           </div>
@@ -230,7 +231,7 @@ export default function Home() {
         <div className="page-shell flex flex-col gap-8 py-10 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <Logo />
-            <p className="mt-4 max-w-xs text-sm leading-6 text-forest-800/60">A clearer starting point for legal information.</p>
+            <p className="mt-4 max-w-xs text-sm leading-6 text-forest-800/60">A clearer starting point for Indian legal information.</p>
           </div>
           <div className="flex flex-wrap gap-x-6 gap-y-3 text-sm text-forest-800/65">
             <Link className="footer-link" href="/privacy">Privacy</Link>

@@ -25,7 +25,7 @@ const initialMessages: ChatMessage[] = [
     id: "welcome",
     role: "assistant",
     content:
-      "Welcome to LexAI. Ask about a legal concept, a document, or the questions you want to prepare for a qualified legal professional.",
+      "Welcome to LexAI. Ask about a legal concept, a document, or the questions you want to prepare for a qualified Indian legal professional. LexAI provides general information about Indian law only, and information may be incomplete or out of date.",
   },
 ];
 
@@ -152,11 +152,12 @@ export function ChatInterface() {
           <div>
             <div className="eyebrow mb-4"><span className="eyebrow-dot" /> Assistant preview</div>
             <h1 className="display-title text-4xl leading-[0.98] tracking-[-0.04em] sm:text-6xl">Bring a better question.</h1>
-            <p className="body-copy mt-4 max-w-2xl leading-7">Use this space to explore legal information and organize what you want to ask next.</p>
+            <p className="body-copy mt-4 max-w-2xl leading-7">Use this space to explore general information about Indian law and organize what you want to ask next.</p>
+            <p className="mt-3 max-w-2xl text-sm leading-6 text-forest-800/60">Information may be incomplete or out of date. Messages are sent to Google’s Gemini API for processing and are not stored by LexAI.</p>
           </div>
           <div className="chat-legal-notice shrink-0" id="chat-legal-notice">
             <Shield className="size-4 text-gold-700" />
-            <span>General information only, not legal advice.</span>
+            <span>Indian law information only; not legal advice.</span>
           </div>
         </div>
 

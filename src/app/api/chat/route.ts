@@ -18,10 +18,14 @@ const RATE_LIMIT_WINDOW_MS = 60_000;
 const rateLimitStore = new Map<string, number[]>();
 
 function getClientIp(request: Request) {
-  const netlifyIp = request.headers.get("x-nf-client-connection-ip")?.trim();
-  const forwardedIp = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim();
-  const realIp = request.headers.get("x-real-ip")?.trim();
-  return netlifyIp || forwardedIp || realIp || "unknown";
+  if (process.env.NETLIFY === "true") {
+    const netlifyIp = request.headers.get("x-nf-client-connection-ip")?.trim();
+    return netlifyIp || "unknown-client";
+  }
+
+  // Do not fall back to client-supplied forwarding headers. During local
+  // development, use one shared bucket because no trusted platform IP exists.
+  return "local-dev";
 }
 
 function isRateLimited(ip: string) {
