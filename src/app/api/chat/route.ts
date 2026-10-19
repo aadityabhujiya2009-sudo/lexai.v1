@@ -6,6 +6,7 @@ import {
   type LegalInformationProviderErrorKind,
 } from "@/lib/ai/provider";
 import { GeminiLegalInformationProvider } from "@/lib/ai/gemini-provider";
+import { getCookieValue, hasCurrentTermsAcceptance, TERMS_ACCEPTANCE_COOKIE } from "@/lib/terms";
 
 export const runtime = "nodejs";
 
@@ -95,6 +96,15 @@ function providerFailureResponse(error: unknown, startedAt: number) {
 
 export async function POST(request: Request) {
   const startedAt = Date.now();
+
+  if (!hasCurrentTermsAcceptance(getCookieValue(request.headers.get("cookie"), TERMS_ACCEPTANCE_COOKIE))) {
+    return jsonResponse(
+      { error: "Please review and accept the current LexAI terms before using the assistant." },
+      403,
+      "terms_not_accepted",
+      startedAt,
+    );
+  }
 
   // Best effort only: each serverless instance has separate memory. A shared
   // store such as Netlify Blobs, Upstash, or Redis should replace this later.
